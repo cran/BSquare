@@ -1,6 +1,5 @@
-#include "helpers_np.h"
 #include "math.h"
-#include <stdlib.h> //brackets mean this is a built in C library from the compiler
+#include <stdlib.h>
 #include "R.h"
 #include "Rmath.h"
 
@@ -10,6 +9,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <R_ext/Utils.h>
+#include "helpers.h"
+
+
 
 void MCMC_IP(int *burn, int *iters,
         double *tuning_parms, double *tuning_tail,
@@ -30,8 +32,6 @@ void MCMC_IP(int *burn, int *iters,
 
         double XI_LOW[*iters],
         double XI_HIGH[*iters],
-
-        double CPO[*N],
         double *LPML,
 
         int ACC_THETA[*M * *P],
@@ -44,22 +44,22 @@ void MCMC_IP(int *burn, int *iters,
         int *verbose
 
 ){
-        /*************************I: Declare variables, initialize stuff **********************/
-    double *tau = (double *)R_alloc(*N, sizeof(double*));
-    double *tau_low = (double *)R_alloc(*N, sizeof(double*));
-    double *tau_high = (double *)R_alloc(*N, sizeof(double*));
-    double *theta = (double *)R_alloc(*M * *P, sizeof(double*));
-    double *cantheta = (double *)R_alloc(*M * *P, sizeof(double*));
-    double *canthetastar = (double *)R_alloc(*M * *P, sizeof(double*));
-    int *bin = (int *)R_alloc(*N, sizeof(int*));
-    int *bin_low = (int *)R_alloc(*N, sizeof(int*));
-    int *bin_high = (int *)R_alloc(*N, sizeof(int*));
-    double *log_like = (double *)R_alloc(*N, sizeof(double*));
+    /*************************I: Declare variables, initialize stuff **********************/
+    double *tau = (double *)Calloc(*N, double);
+    double *tau_low = (double *)Calloc(*N, double);
+    double *tau_high = (double *)Calloc(*N, double);
+    double *theta = (double *)Calloc(*M * *P, double);
+    double *cantheta = (double *)Calloc(*M * *P, double);
+    double *canthetastar = (double *)Calloc(*M * *P, double);
+    int *bin = (int *)Calloc(*N, int);
+    int *bin_low = (int *)Calloc(*N, int);
+    int *bin_high = (int *)Calloc(*N, int);
+    double *log_like = (double *)Calloc(*N, double);
     int i, j, k, m, n, p, slope_update, nsamps_int;
     double ll_sum, can_ll_sum;
     double E_vec[2], Z_vec[2];
 
-    double *reset_value = (double *)R_alloc(29, sizeof(double*));
+    double *reset_value = (double *)Calloc(29, double);
 
     for(n = 0; n < 10; n++){
     reset_value[n] = *q_low + 0.001 * (n + 1);
@@ -70,6 +70,8 @@ void MCMC_IP(int *burn, int *iters,
     for(n = 19; n < 29; n++){
     reset_value[n] = *q_high + 0.001 * (19 - n);
     }
+
+    double *CPO  = (double *)Calloc(*N, double); /*candidate basis matrix*/
 
 /*    initialize tau and bin*/
     for (n = 0; n < *N; n++){
@@ -543,5 +545,18 @@ void MCMC_IP(int *burn, int *iters,
         *LPML += log(CPO[k]);
     }
     PutRNGstate();
+
+    Free(tau);
+    Free(tau_low);
+    Free(tau_high);
+    Free(theta);
+    Free(cantheta);
+    Free(canthetastar);
+    Free(bin);
+    Free(bin_low);
+    Free(bin_high);
+    Free(log_like);
+    Free(reset_value);
+    Free(CPO);
 }
 

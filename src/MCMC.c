@@ -1,5 +1,5 @@
 #include "math.h"
-#include <stdlib.h> //brackets mean this is a built in C library from the compiler
+#include <stdlib.h>
 #include "R.h"
 #include "Rmath.h"
 
@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <R_ext/Utils.h>
 #include "helpers.h"
-#include "helpers_np.h"
+
 /*
 n1 is the number of observations that were censored below
 n2 - n1 is the number of uncensored observations
@@ -55,9 +55,6 @@ void MCMC(int *burn, int *sweeps,
           double SIGMA2[*sweeps][*P],
           double RHO[*sweeps][*P],
           double SHAPE[*sweeps],
-          double LP[*sweeps],
-          double LL[*sweeps][*N],
-          double CPO[*N],
           double *LPML,
           int ACC_BETA[*P],
           int ACC_ALPHA[*L * *P],
@@ -69,27 +66,32 @@ void MCMC(int *burn, int *sweeps,
            ){
 
 
-/***************** Part I: allocate memory, initialize stuff *********************/
+///***************** Part I: allocate memory, initialize stuff *********************/
+    double *alpha = (double *)Calloc(*L * *P, double);
+    double *canalphastar = (double *)Calloc(*L * *P, double);
+    double *canalpha = (double *)Calloc(*L * *P, double);
+    double *canbeta = (double *)Calloc(*P, double);
+    double *log_like = (double *)Calloc(*N, double);
 
-    double *alpha = (double *)R_alloc(*L * *P, sizeof(double*));
-    double *canalphastar = (double *)R_alloc(*L * *P, sizeof(double*));
-    double *canalpha = (double *)R_alloc(*L * *P, sizeof(double*));
-    double *canbeta = (double *)R_alloc(*P, sizeof(double*));
-    double *log_like = (double *)R_alloc(*N, sizeof(double*));
+
     double ll_sum, can_ll_sum, canrho, canrhoquad, logdet, canlogdet;
 
-    double *B  = (double *)R_alloc((*L+1) * *L, sizeof(double*)); /*basis matrix*/
-    double *can_B  = (double *)R_alloc((*L+1) * *L, sizeof(double*)); /*candidate basis matrix*/
+    double *B  = (double *)Calloc((*L+1) * *L, double); /*basis matrix*/
+    double *can_B  = (double *)Calloc((*L+1) * *L, double); /*candidate basis matrix*/
     double kappa[*L + 1]; /*knots*/
+
+    double *CPO  = (double *)Calloc(*N, double); /*candidate basis matrix*/
 
     int nsamps_int, slope_update;
 
     int i, j, k, l, p;
     double E, Z;
 
-    int *bin = (int *)R_alloc(*N, sizeof(int*));
-    int *bin_low = (int *)R_alloc(*N, sizeof(int*));
-    int *bin_high = (int *)R_alloc(*N, sizeof(int*));
+    int *bin = (int *)Calloc(*N, int);
+    int *bin_low = (int *)Calloc(*N, int);
+    int *bin_high = (int *)Calloc(*N, int);
+
+
 
     for(i = 0; i < *N; i++){
         bin[i] = 1;
@@ -190,7 +192,7 @@ void MCMC(int *burn, int *sweeps,
     make_B(L, kappa, q_ptr, shape, B);
     /*initialize the candidate basis matrix*/
     make_B(L, kappa, q_ptr, shape, can_B);
-    /*initialize the likelihood*/
+    /* initialize the likelihood*/
 
     clike(N, n1, n2, n3, n4, kappa, P, L,
            X, y, y_low, y_high,
@@ -496,7 +498,6 @@ void MCMC(int *burn, int *sweeps,
             bin, bin_low, bin_high, &ll_sum, log_like);
 
         for(k = 0; k < *N; k++){
-            LL[i][k] = log_like[k];
             CPO[k] += exp(-log_like[k]);
         }
     }
@@ -505,5 +506,22 @@ void MCMC(int *burn, int *sweeps,
         *LPML += log(CPO[k]);
         }
     PutRNGstate();
+
+    Free(alpha);
+    Free(canalphastar);
+    Free(canalpha);
+    Free(canbeta);
+    Free(log_like);
+
+    Free(B);
+    Free(can_B);
+    Free(canbeta);
+    Free(log_like);
+
+    Free(bin);
+    Free(bin_low);
+    Free(bin_high);
+    Free(CPO);
+
 }
 
