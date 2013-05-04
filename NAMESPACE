@@ -1,0 +1,11 @@
+#necessary packages
+import(quantreg)
+import(quadprog)
+import(VGAM)
+#R functions
+export(qreg)
+export(qreg_spline)
+export(qr_plot)
+export(dqreg)
+# C functions
+useDynLib(BSquare)
